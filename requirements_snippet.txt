@@ -1,0 +1,5 @@
+# OLMoCR Extractor Dependencies
+# Add these lines to your project's requirements.txt
+
+olmocr
+python-dotenv  # Optional: for loading .env files with API keys
