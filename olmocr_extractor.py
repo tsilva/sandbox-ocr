@@ -33,6 +33,8 @@ import os
 import subprocess
 import signal
 import time
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any
 
@@ -144,6 +146,291 @@ class OLMoCRExtractor:
                 raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
         return self._run_conversion([str(p) for p in pdf_paths], timeout=timeout)
+
+    def convert_pdfs_colocated(
+        self,
+        pdf_paths: List[Union[str, Path]],
+        timeout_per_pdf: Optional[int] = None,
+        cleanup_temp: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Convert multiple PDFs to markdown, placing output files alongside each PDF.
+
+        This method processes each PDF individually using a unique temporary workspace,
+        then moves the generated markdown file to the same directory as the source PDF.
+        This approach ensures no conflicts and enables parallel processing.
+
+        Args:
+            pdf_paths: List of paths to PDF files.
+            timeout_per_pdf: Maximum seconds to wait for each PDF conversion. None for no timeout.
+            cleanup_temp: Whether to clean up temporary workspace directories after conversion.
+
+        Returns:
+            Dictionary with conversion results:
+                - success: bool - True if all conversions succeeded
+                - results: Dict mapping PDF paths to their results
+                    Each result contains:
+                        - success: bool
+                        - pdf_path: str - Original PDF path
+                        - markdown_file: str - Path to generated markdown file (colocated with PDF)
+                        - content: str - Markdown content
+                        - error: str (if failed)
+                - failed_count: int - Number of failed conversions
+                - success_count: int - Number of successful conversions
+
+        Raises:
+            FileNotFoundError: If any PDF file doesn't exist.
+        """
+        pdf_paths = [Path(p).resolve() for p in pdf_paths]
+
+        # Validate all files exist
+        for pdf_path in pdf_paths:
+            if not pdf_path.exists():
+                raise FileNotFoundError(f"PDF not found: {pdf_path}")
+
+        if self.verbose:
+            print("=" * 80)
+            print("OLMoCR Co-located PDF to Markdown Conversion")
+            print("=" * 80)
+            print(f"Endpoint: {self.endpoint}")
+            print(f"Model: {self.model}")
+            print(f"Input PDFs: {len(pdf_paths)}")
+            for pdf in pdf_paths:
+                print(f"  - {pdf}")
+            print("=" * 80)
+            print()
+
+        results = {}
+        success_count = 0
+        failed_count = 0
+
+        # Process each PDF individually
+        for idx, pdf_path in enumerate(pdf_paths, 1):
+            if self.verbose:
+                print(f"\n[{idx}/{len(pdf_paths)}] Processing: {pdf_path.name}")
+                print("-" * 80)
+
+            # Create unique temporary workspace for this PDF
+            temp_workspace = Path(tempfile.mkdtemp(prefix=f"olmocr_{pdf_path.stem}_"))
+
+            try:
+                # Run conversion with temporary workspace
+                result = self._run_conversion_single(
+                    str(pdf_path),
+                    temp_workspace,
+                    timeout=timeout_per_pdf
+                )
+
+                if result["success"]:
+                    # File is already in the right place (colocated with PDF)
+                    result["pdf_path"] = str(pdf_path)
+                    success_count += 1
+
+                    if self.verbose:
+                        print(f"✓ Markdown saved to: {result['markdown_file']}")
+                else:
+                    failed_count += 1
+                    result["pdf_path"] = str(pdf_path)
+
+                results[str(pdf_path)] = result
+
+            except Exception as e:
+                failed_count += 1
+                results[str(pdf_path)] = {
+                    "success": False,
+                    "pdf_path": str(pdf_path),
+                    "error": str(e)
+                }
+                if self.verbose:
+                    print(f"✗ Error processing {pdf_path.name}: {e}")
+
+            finally:
+                # Clean up temporary workspace
+                if cleanup_temp and temp_workspace.exists():
+                    try:
+                        shutil.rmtree(temp_workspace)
+                    except Exception as e:
+                        if self.verbose:
+                            print(f"Warning: Failed to clean up temp workspace: {e}")
+
+        if self.verbose:
+            print()
+            print("=" * 80)
+            print(f"✓ Batch conversion completed!")
+            print(f"  Success: {success_count}/{len(pdf_paths)}")
+            print(f"  Failed: {failed_count}/{len(pdf_paths)}")
+            print("=" * 80)
+
+        return {
+            "success": failed_count == 0,
+            "results": results,
+            "success_count": success_count,
+            "failed_count": failed_count
+        }
+
+    def _run_conversion_single(
+        self,
+        pdf_path: str,
+        workspace_dir: Path,
+        timeout: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Internal method to run the OLMoCR pipeline for a single PDF.
+
+        Args:
+            pdf_path: Path to PDF file.
+            workspace_dir: Workspace directory for this conversion.
+            timeout: Maximum seconds to wait for conversion.
+
+        Returns:
+            Dictionary with conversion results.
+        """
+        # Create workspace directory
+        workspace_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build command
+        cmd = [
+            "python", "-m", "olmocr.pipeline",
+            str(workspace_dir),
+            "--server", self.endpoint,
+            "--api_key", self.api_key,
+            "--model", self.model,
+            "--markdown",
+            "--pdfs", pdf_path
+        ]
+
+        try:
+            # Run the pipeline
+            process = subprocess.Popen(
+                cmd,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+                bufsize=1
+            )
+
+            # Monitor completion
+            start_time = time.time()
+            queue_empty_count = 0
+            markdown_written = False
+
+            for line in iter(process.stderr.readline, ''):
+                # Check timeout
+                if timeout and (time.time() - start_time) > timeout:
+                    process.send_signal(signal.SIGTERM)
+                    process.wait(timeout=5)
+                    return {
+                        "success": False,
+                        "error": f"Conversion timed out after {timeout} seconds"
+                    }
+
+                # Show important log lines (only in verbose mode)
+                if self.verbose and any(keyword in line for keyword in
+                    ['ERROR', 'WARNING', 'Writing', 'markdown']):
+                    print(line.rstrip())
+
+                # Track completion signals
+                if 'Writing' in line and 'markdown' in line:
+                    markdown_written = True
+
+                if 'Queue remaining: 0' in line and markdown_written:
+                    queue_empty_count += 1
+                    # After seeing queue empty 3 times, we're done
+                    if queue_empty_count >= 3:
+                        time.sleep(0.5)
+                        process.send_signal(signal.SIGTERM)
+                        process.wait(timeout=5)
+                        break
+
+            # Ensure process is terminated
+            if process.poll() is None:
+                process.terminate()
+                process.wait(timeout=5)
+
+            # Find the generated markdown file
+            # The olmocr pipeline writes markdown files to the same directory as the PDF
+            pdf_path_obj = Path(pdf_path)
+            expected_md_file = pdf_path_obj.parent / f"{pdf_path_obj.stem}.md"
+
+            # Wait a bit for file to be fully written
+            max_wait = 5  # seconds
+            wait_interval = 0.5
+            waited = 0
+
+            while waited < max_wait:
+                if expected_md_file.exists():
+                    # Ensure file is fully written by checking size stability
+                    try:
+                        size1 = expected_md_file.stat().st_size
+                        time.sleep(0.2)
+                        size2 = expected_md_file.stat().st_size
+                        if size1 == size2 and size1 > 0:
+                            content = expected_md_file.read_text()
+                            return {
+                                "success": True,
+                                "markdown_file": str(expected_md_file),
+                                "content": content
+                            }
+                    except Exception:
+                        pass
+
+                time.sleep(wait_interval)
+                waited += wait_interval
+
+            # Check one more time after waiting
+            if expected_md_file.exists():
+                try:
+                    content = expected_md_file.read_text()
+                    return {
+                        "success": True,
+                        "markdown_file": str(expected_md_file),
+                        "content": content
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": f"Failed to read markdown file: {e}"
+                    }
+
+            # Also check workspace/markdown as fallback
+            markdown_dir = workspace_dir / "markdown"
+            if markdown_dir.exists():
+                markdown_files = list(markdown_dir.glob("*.md"))
+                if markdown_files:
+                    md_file = markdown_files[0]
+                    try:
+                        content = md_file.read_text()
+                        return {
+                            "success": True,
+                            "markdown_file": str(md_file),
+                            "content": content
+                        }
+                    except Exception as e:
+                        return {
+                            "success": False,
+                            "error": f"Failed to read markdown file: {e}"
+                        }
+
+            return {
+                "success": False,
+                "error": "No markdown file generated"
+            }
+
+        except subprocess.TimeoutExpired:
+            if process.poll() is None:
+                process.kill()
+            return {
+                "success": False,
+                "error": "Process termination timed out"
+            }
+
+        except Exception as e:
+            if 'process' in locals() and process.poll() is None:
+                process.terminate()
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
     def _run_conversion(
         self,
