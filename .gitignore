@@ -208,6 +208,11 @@ __marimo__/
 
 # Test files
 test*.pdf
+test*.md
 
 # OLMoCR workspace output
 workspace/
+temp_workspace/
+
+# Debug files
+test_debug.py

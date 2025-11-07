@@ -38,17 +38,30 @@ import tempfile
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any
 
+try:
+    from ocr_providers import get_provider, OCRProvider, PROVIDERS
+except ImportError:
+    # Fallback if ocr_providers is not available
+    OCRProvider = None
+    PROVIDERS = None
+    get_provider = None
+
 
 class OLMoCRExtractor:
     """
-    Portable OCR extractor using OLMoCR with DeepInfra remote inference.
+    Portable OCR extractor supporting multiple OCR providers.
 
-    Converts PDF documents to markdown using the allenai/olmOCR-2-7B-1025 model,
-    which handles equations, tables, complex layouts, handwriting, and multi-column documents.
+    Converts PDF documents to markdown using various OCR models including:
+    - OLMoCR (via DeepInfra)
+    - DeepSeek-OCR (via vLLM self-hosted or Clarifai)
+    - Any OpenAI-compatible OCR endpoint
+
+    All providers use OpenAI-compatible API format via olmocr.pipeline.
     """
 
     DEFAULT_ENDPOINT = "https://api.deepinfra.com/v1/openai"
     DEFAULT_MODEL = "allenai/olmOCR-2-7B-1025"
+    DEFAULT_PROVIDER = "olmocr-deepinfra"
 
     def __init__(
         self,
@@ -56,35 +69,82 @@ class OLMoCRExtractor:
         workspace_dir: str = "./workspace",
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
+        provider: Optional[str] = None,
         verbose: bool = True
     ):
         """
-        Initialize the OLMoCR extractor.
+        Initialize the OCR extractor.
 
         Args:
-            api_key: DeepInfra API key. If None, will try to load from DEEPINFRA_API_KEY env var.
+            api_key: API key for the provider. If None, will try to load from provider's env var.
             workspace_dir: Directory where output files will be saved.
-            endpoint: API endpoint URL. Defaults to DeepInfra's OpenAI-compatible endpoint.
-            model: Model name to use. Defaults to allenai/olmOCR-2-7B-1025.
+            endpoint: API endpoint URL. Overrides provider default.
+            model: Model name to use. Overrides provider default.
+            provider: Provider name (e.g., 'olmocr-deepinfra', 'deepseek-vllm', 'deepseek-clarifai').
+                     If None, uses default DeepInfra OLMoCR.
             verbose: Whether to print progress information.
 
         Raises:
             ValueError: If API key is not provided and not found in environment.
-        """
-        self.api_key = api_key or os.getenv("DEEPINFRA_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "API key is required. Provide it via api_key parameter or "
-                "set DEEPINFRA_API_KEY environment variable."
+
+        Examples:
+            # Use default OLMoCR via DeepInfra
+            extractor = OLMoCRExtractor(api_key="your_key")
+
+            # Use DeepSeek-OCR via self-hosted vLLM
+            extractor = OLMoCRExtractor(
+                provider="deepseek-vllm",
+                endpoint="http://localhost:8000/v1"
             )
 
+            # Use custom endpoint
+            extractor = OLMoCRExtractor(
+                api_key="your_key",
+                endpoint="https://your-endpoint.com/v1",
+                model="your-model-name"
+            )
+        """
+        # Load provider configuration if specified
+        provider_config = None
+        if provider and get_provider:
+            try:
+                provider_config = get_provider(provider)
+                if self.verbose:
+                    print(f"Using provider: {provider_config.name}")
+            except ValueError as e:
+                if self.verbose:
+                    print(f"Warning: {e}")
+                    print("Falling back to manual configuration")
+
+        # Determine API key
+        if api_key:
+            self.api_key = api_key
+        elif provider_config:
+            self.api_key = os.getenv(provider_config.api_key_env_var)
+        else:
+            self.api_key = os.getenv("DEEPINFRA_API_KEY")
+
+        # API key validation (allow empty for some self-hosted scenarios)
+        if not self.api_key and provider != "deepseek-vllm":
+            key_var = provider_config.api_key_env_var if provider_config else "DEEPINFRA_API_KEY"
+            raise ValueError(
+                f"API key is required. Provide it via api_key parameter or "
+                f"set {key_var} environment variable."
+            )
+
+        # Set endpoint and model (explicit params override provider defaults)
         self.workspace_dir = Path(workspace_dir)
-        self.endpoint = endpoint or self.DEFAULT_ENDPOINT
-        self.model = model or self.DEFAULT_MODEL
+        self.endpoint = endpoint or (provider_config.endpoint if provider_config else self.DEFAULT_ENDPOINT)
+        self.model = model or (provider_config.model if provider_config else self.DEFAULT_MODEL)
+        self.provider = provider or self.DEFAULT_PROVIDER
         self.verbose = verbose
 
         # Create workspace directory if it doesn't exist
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
+
+        if self.verbose:
+            print(f"Initialized with endpoint: {self.endpoint}")
+            print(f"Model: {self.model}")
 
     def convert_pdf(
         self,
@@ -622,6 +682,9 @@ def convert_pdf_to_markdown(
     pdf_path: Union[str, Path],
     api_key: Optional[str] = None,
     workspace_dir: str = "./workspace",
+    provider: Optional[str] = None,
+    endpoint: Optional[str] = None,
+    model: Optional[str] = None,
     verbose: bool = True
 ) -> Dict[str, Any]:
     """
@@ -629,16 +692,33 @@ def convert_pdf_to_markdown(
 
     Args:
         pdf_path: Path to the PDF file.
-        api_key: DeepInfra API key. If None, will try to load from environment.
+        api_key: API key for the provider. If None, will try to load from environment.
         workspace_dir: Directory where output files will be saved.
+        provider: Provider name (e.g., 'olmocr-deepinfra', 'deepseek-vllm').
+        endpoint: API endpoint URL. Overrides provider default.
+        model: Model name to use. Overrides provider default.
         verbose: Whether to print progress information.
 
     Returns:
         Dictionary with conversion results.
+
+    Examples:
+        # Use default OLMoCR via DeepInfra
+        result = convert_pdf_to_markdown("document.pdf", api_key="your_key")
+
+        # Use DeepSeek-OCR via vLLM
+        result = convert_pdf_to_markdown(
+            "document.pdf",
+            provider="deepseek-vllm",
+            endpoint="http://localhost:8000/v1"
+        )
     """
     extractor = OLMoCRExtractor(
         api_key=api_key,
         workspace_dir=workspace_dir,
+        provider=provider,
+        endpoint=endpoint,
+        model=model,
         verbose=verbose
     )
     return extractor.convert_pdf(pdf_path)
