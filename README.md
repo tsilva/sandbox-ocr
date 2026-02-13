@@ -1,7 +1,7 @@
 <div align="center">
   <img src="logo.png" alt="sandbox-ocr" width="512"/>
 
-  **📄 PDF-to-Markdown OCR conversion with multiple provider support**
+  **📄 PDF-to-Markdown OCR conversion with multiple providers 👁️**
 
 </div>
 
