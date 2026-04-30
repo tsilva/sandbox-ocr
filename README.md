@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="sandbox-ocr" width="512"/>
+  <img src="https://raw.githubusercontent.com/tsilva/sandbox-ocr/main/logo.png" alt="sandbox-ocr" width="512"/>
 
   **📄 PDF-to-Markdown OCR conversion with multiple providers 👁️**
 
