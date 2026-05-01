@@ -5,7 +5,7 @@ description = "Testing OLMoCR with DeepInfra remote inference"
 requires-python = ">=3.11"
 dependencies = [
     "olmocr>=0.4.0",
-    "python-dotenv>=1.0.0",
+    "python-dotenv>=1.2.2",
 ]
 
 [tool.uv]
