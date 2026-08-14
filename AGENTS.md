@@ -14,7 +14,7 @@ All providers use OpenAI-compatible API format and handle equations, tables, com
 
 ## Environment Setup
 
-This project uses `uv` for dependency management. Environment variables (stored in `.env` file, see `.env.example`):
+This project uses `uv` for dependency management. Private environment variables are declared in `.keyenv.toml`, stored in macOS Keychain, and injected with `keyenv run -- ...`; non-secret provider settings may remain in `.env` (see `.env.example`):
 - `DEEPINFRA_API_KEY`: DeepInfra API key (for OLMoCR)
 - `CLARIFAI_PAT`: Clarifai Personal Access Token (for DeepSeek-OCR via Clarifai)
 - `VLLM_API_KEY`: Optional key for secured vLLM server (for self-hosted DeepSeek-OCR)
@@ -107,7 +107,7 @@ All OCR output goes to `workspace/` directory:
 - **Endpoint**: https://api.deepinfra.com/v1/openai
 - **Model**: allenai/olmOCR-2-7B-1025
 - **Pricing**: ~$0.09 per 1M input tokens, ~$0.19 per 1M output tokens
-- **Setup**: Set `DEEPINFRA_API_KEY` in `.env`
+- **Setup**: Store `DEEPINFRA_API_KEY` with `keyenv set DEEPINFRA_API_KEY`
 
 ### DeepSeek-OCR via vLLM (Self-hosted)
 - **Endpoint**: http://localhost:8000/v1 (configurable)
@@ -118,6 +118,6 @@ All OCR output goes to `workspace/` directory:
 ### DeepSeek-OCR via Clarifai
 - **Endpoint**: Clarifai's OpenAI-compatible endpoint
 - **Model**: deepseek-ai/DeepSeek-OCR
-- **Setup**: Set `CLARIFAI_PAT` in `.env`
+- **Setup**: Declare and store `CLARIFAI_PAT` in Keychain before using this provider
 
 For detailed DeepSeek-OCR setup instructions, see **DEEPSEEK_SETUP.md**.
