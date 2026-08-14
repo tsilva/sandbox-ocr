@@ -30,16 +30,16 @@ Usage:
 """
 
 import os
-import subprocess
-import signal
-import time
 import shutil
+import signal
+import subprocess
 import tempfile
+import time
 from pathlib import Path
-from typing import Optional, Union, List, Dict, Any
+from typing import Any, Dict, List, Optional, Union
 
 try:
-    from ocr_providers import get_provider, OCRProvider, PROVIDERS
+    from ocr_providers import PROVIDERS, OCRProvider, get_provider
 except ImportError:
     # Fallback if ocr_providers is not available
     OCRProvider = None
@@ -70,7 +70,7 @@ class OLMoCRExtractor:
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
-        verbose: bool = True
+        verbose: bool = True,
     ):
         """
         Initialize the OCR extractor.
@@ -80,7 +80,8 @@ class OLMoCRExtractor:
             workspace_dir: Directory where output files will be saved.
             endpoint: API endpoint URL. Overrides provider default.
             model: Model name to use. Overrides provider default.
-            provider: Provider name (e.g., 'olmocr-deepinfra', 'deepseek-vllm', 'deepseek-clarifai').
+            provider: Provider name (for example, 'olmocr-deepinfra',
+                'deepseek-vllm', or 'deepseek-clarifai').
                      If None, uses default DeepInfra OLMoCR.
             verbose: Whether to print progress information.
 
@@ -104,6 +105,8 @@ class OLMoCRExtractor:
                 model="your-model-name"
             )
         """
+        self.verbose = verbose
+
         # Load provider configuration if specified
         provider_config = None
         if provider and get_provider:
@@ -134,11 +137,11 @@ class OLMoCRExtractor:
 
         # Set endpoint and model (explicit params override provider defaults)
         self.workspace_dir = Path(workspace_dir)
-        self.endpoint = endpoint or (provider_config.endpoint if provider_config else self.DEFAULT_ENDPOINT)
+        self.endpoint = endpoint or (
+            provider_config.endpoint if provider_config else self.DEFAULT_ENDPOINT
+        )
         self.model = model or (provider_config.model if provider_config else self.DEFAULT_MODEL)
         self.provider = provider or self.DEFAULT_PROVIDER
-        self.verbose = verbose
-
         # Create workspace directory if it doesn't exist
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
 
@@ -150,7 +153,7 @@ class OLMoCRExtractor:
         self,
         pdf_path: Union[str, Path],
         output_name: Optional[str] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Convert a single PDF to markdown.
@@ -177,9 +180,7 @@ class OLMoCRExtractor:
         return self._run_conversion([str(pdf_path)], timeout=timeout)
 
     def convert_pdfs(
-        self,
-        pdf_paths: List[Union[str, Path]],
-        timeout: Optional[int] = None
+        self, pdf_paths: List[Union[str, Path]], timeout: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Convert multiple PDFs to markdown.
@@ -211,7 +212,7 @@ class OLMoCRExtractor:
         self,
         pdf_paths: List[Union[str, Path]],
         timeout_per_pdf: Optional[int] = None,
-        cleanup_temp: bool = True
+        cleanup_temp: bool = True,
     ) -> Dict[str, Any]:
         """
         Convert multiple PDFs to markdown, placing output files alongside each PDF.
@@ -276,9 +277,7 @@ class OLMoCRExtractor:
             try:
                 # Run conversion with temporary workspace
                 result = self._run_conversion_single(
-                    str(pdf_path),
-                    temp_workspace,
-                    timeout=timeout_per_pdf
+                    str(pdf_path), temp_workspace, timeout=timeout_per_pdf
                 )
 
                 if result["success"]:
@@ -299,7 +298,7 @@ class OLMoCRExtractor:
                 results[str(pdf_path)] = {
                     "success": False,
                     "pdf_path": str(pdf_path),
-                    "error": str(e)
+                    "error": str(e),
                 }
                 if self.verbose:
                     print(f"✗ Error processing {pdf_path.name}: {e}")
@@ -316,7 +315,7 @@ class OLMoCRExtractor:
         if self.verbose:
             print()
             print("=" * 80)
-            print(f"✓ Batch conversion completed!")
+            print("✓ Batch conversion completed!")
             print(f"  Success: {success_count}/{len(pdf_paths)}")
             print(f"  Failed: {failed_count}/{len(pdf_paths)}")
             print("=" * 80)
@@ -325,14 +324,11 @@ class OLMoCRExtractor:
             "success": failed_count == 0,
             "results": results,
             "success_count": success_count,
-            "failed_count": failed_count
+            "failed_count": failed_count,
         }
 
     def _run_conversion_single(
-        self,
-        pdf_path: str,
-        workspace_dir: Path,
-        timeout: Optional[int] = None
+        self, pdf_path: str, workspace_dir: Path, timeout: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Internal method to run the OLMoCR pipeline for a single PDF.
@@ -350,23 +346,25 @@ class OLMoCRExtractor:
 
         # Build command
         cmd = [
-            "python", "-m", "olmocr.pipeline",
+            "python",
+            "-m",
+            "olmocr.pipeline",
             str(workspace_dir),
-            "--server", self.endpoint,
-            "--api_key", self.api_key,
-            "--model", self.model,
+            "--server",
+            self.endpoint,
+            "--api_key",
+            self.api_key,
+            "--model",
+            self.model,
             "--markdown",
-            "--pdfs", pdf_path
+            "--pdfs",
+            pdf_path,
         ]
 
         try:
             # Run the pipeline
             process = subprocess.Popen(
-                cmd,
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                text=True,
-                bufsize=1
+                cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1
             )
 
             # Monitor completion
@@ -374,26 +372,27 @@ class OLMoCRExtractor:
             queue_empty_count = 0
             markdown_written = False
 
-            for line in iter(process.stderr.readline, ''):
+            for line in iter(process.stderr.readline, ""):
                 # Check timeout
                 if timeout and (time.time() - start_time) > timeout:
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=5)
                     return {
                         "success": False,
-                        "error": f"Conversion timed out after {timeout} seconds"
+                        "error": f"Conversion timed out after {timeout} seconds",
                     }
 
                 # Show important log lines (only in verbose mode)
-                if self.verbose and any(keyword in line for keyword in
-                    ['ERROR', 'WARNING', 'Writing', 'markdown']):
+                if self.verbose and any(
+                    keyword in line for keyword in ["ERROR", "WARNING", "Writing", "markdown"]
+                ):
                     print(line.rstrip())
 
                 # Track completion signals
-                if 'Writing' in line and 'markdown' in line:
+                if "Writing" in line and "markdown" in line:
                     markdown_written = True
 
-                if 'Queue remaining: 0' in line and markdown_written:
+                if "Queue remaining: 0" in line and markdown_written:
                     queue_empty_count += 1
                     # After seeing queue empty 3 times, we're done
                     if queue_empty_count >= 3:
@@ -429,7 +428,7 @@ class OLMoCRExtractor:
                             return {
                                 "success": True,
                                 "markdown_file": str(expected_md_file),
-                                "content": content
+                                "content": content,
                             }
                     except Exception:
                         pass
@@ -444,13 +443,10 @@ class OLMoCRExtractor:
                     return {
                         "success": True,
                         "markdown_file": str(expected_md_file),
-                        "content": content
+                        "content": content,
                     }
                 except Exception as e:
-                    return {
-                        "success": False,
-                        "error": f"Failed to read markdown file: {e}"
-                    }
+                    return {"success": False, "error": f"Failed to read markdown file: {e}"}
 
             # Also check workspace/markdown as fallback
             markdown_dir = workspace_dir / "markdown"
@@ -460,42 +456,24 @@ class OLMoCRExtractor:
                     md_file = markdown_files[0]
                     try:
                         content = md_file.read_text()
-                        return {
-                            "success": True,
-                            "markdown_file": str(md_file),
-                            "content": content
-                        }
+                        return {"success": True, "markdown_file": str(md_file), "content": content}
                     except Exception as e:
-                        return {
-                            "success": False,
-                            "error": f"Failed to read markdown file: {e}"
-                        }
+                        return {"success": False, "error": f"Failed to read markdown file: {e}"}
 
-            return {
-                "success": False,
-                "error": "No markdown file generated"
-            }
+            return {"success": False, "error": "No markdown file generated"}
 
         except subprocess.TimeoutExpired:
             if process.poll() is None:
                 process.kill()
-            return {
-                "success": False,
-                "error": "Process termination timed out"
-            }
+            return {"success": False, "error": "Process termination timed out"}
 
         except Exception as e:
-            if 'process' in locals() and process.poll() is None:
+            if "process" in locals() and process.poll() is None:
                 process.terminate()
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def _run_conversion(
-        self,
-        pdf_paths: List[str],
-        timeout: Optional[int] = None
+        self, pdf_paths: List[str], timeout: Optional[int] = None
     ) -> Dict[str, Any]:
         """
         Internal method to run the OLMoCR pipeline.
@@ -522,11 +500,16 @@ class OLMoCRExtractor:
 
         # Build command
         cmd = [
-            "python", "-m", "olmocr.pipeline",
+            "python",
+            "-m",
+            "olmocr.pipeline",
             str(self.workspace_dir),
-            "--server", self.endpoint,
-            "--api_key", self.api_key,
-            "--model", self.model,
+            "--server",
+            self.endpoint,
+            "--api_key",
+            self.api_key,
+            "--model",
+            self.model,
             "--markdown",
         ]
 
@@ -537,11 +520,7 @@ class OLMoCRExtractor:
         try:
             # Run the pipeline
             process = subprocess.Popen(
-                cmd,
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                text=True,
-                bufsize=1
+                cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1
             )
 
             # Monitor completion
@@ -549,26 +528,35 @@ class OLMoCRExtractor:
             queue_empty_count = 0
             markdown_written = False
 
-            for line in iter(process.stderr.readline, ''):
+            for line in iter(process.stderr.readline, ""):
                 # Check timeout
                 if timeout and (time.time() - start_time) > timeout:
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=5)
                     return {
                         "success": False,
-                        "error": f"Conversion timed out after {timeout} seconds"
+                        "error": f"Conversion timed out after {timeout} seconds",
                     }
 
                 # Show important log lines
-                if self.verbose and any(keyword in line for keyword in
-                    ['INFO', 'ERROR', 'WARNING', 'Queue remaining', 'Writing', 'markdown']):
+                if self.verbose and any(
+                    keyword in line
+                    for keyword in [
+                        "INFO",
+                        "ERROR",
+                        "WARNING",
+                        "Queue remaining",
+                        "Writing",
+                        "markdown",
+                    ]
+                ):
                     print(line.rstrip())
 
                 # Track completion signals
-                if 'Writing' in line and 'markdown' in line:
+                if "Writing" in line and "markdown" in line:
                     markdown_written = True
 
-                if 'Queue remaining: 0' in line and markdown_written:
+                if "Queue remaining: 0" in line and markdown_written:
                     queue_empty_count += 1
                     # After seeing queue empty 3 times, we're done
                     if queue_empty_count >= 3:
@@ -609,22 +597,19 @@ class OLMoCRExtractor:
                 return {
                     "success": True,
                     "markdown_file": str(md_file),
-                    "content": contents[str(md_file)]
+                    "content": contents[str(md_file)],
                 }
             else:
                 return {
                     "success": True,
                     "markdown_files": [str(f) for f in markdown_files],
-                    "contents": contents
+                    "contents": contents,
                 }
 
         except subprocess.TimeoutExpired:
             if process.poll() is None:
                 process.kill()
-            return {
-                "success": False,
-                "error": "Process termination timed out"
-            }
+            return {"success": False, "error": "Process termination timed out"}
 
         except KeyboardInterrupt:
             if self.verbose:
@@ -632,18 +617,12 @@ class OLMoCRExtractor:
             if process.poll() is None:
                 process.terminate()
                 process.wait(timeout=5)
-            return {
-                "success": False,
-                "error": "Conversion interrupted by user"
-            }
+            return {"success": False, "error": "Conversion interrupted by user"}
 
         except Exception as e:
-            if 'process' in locals() and process.poll() is None:
+            if "process" in locals() and process.poll() is None:
                 process.terminate()
-            return {
-                "success": False,
-                "error": str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_markdown_content(self, markdown_path: Union[str, Path]) -> str:
         """
@@ -657,11 +636,7 @@ class OLMoCRExtractor:
         """
         return Path(markdown_path).read_text()
 
-    def preview_markdown(
-        self,
-        markdown_path: Union[str, Path],
-        max_chars: int = 500
-    ) -> str:
+    def preview_markdown(self, markdown_path: Union[str, Path], max_chars: int = 500) -> str:
         """
         Get a preview of a markdown file.
 
@@ -685,7 +660,7 @@ def convert_pdf_to_markdown(
     provider: Optional[str] = None,
     endpoint: Optional[str] = None,
     model: Optional[str] = None,
-    verbose: bool = True
+    verbose: bool = True,
 ) -> Dict[str, Any]:
     """
     Convenience function to convert a single PDF to markdown.
@@ -719,7 +694,7 @@ def convert_pdf_to_markdown(
         provider=provider,
         endpoint=endpoint,
         model=model,
-        verbose=verbose
+        verbose=verbose,
     )
     return extractor.convert_pdf(pdf_path)
 
@@ -731,6 +706,7 @@ if __name__ == "__main__":
     # Try to load .env file if available
     try:
         from dotenv import load_dotenv
+
         load_dotenv()
     except ImportError:
         pass
@@ -751,8 +727,8 @@ if __name__ == "__main__":
             print(f"\n✓ Success! Markdown saved to: {result['markdown_file']}")
             print("\nPreview:")
             print("-" * 80)
-            print(result['content'][:500])
-            if len(result['content']) > 500:
+            print(result["content"][:500])
+            if len(result["content"]) > 500:
                 print(f"\n... ({len(result['content']) - 500} more characters)")
             print("-" * 80)
         else:
