@@ -5,10 +5,11 @@ Converts test.pdf to markdown using the allenai/olmOCR-2-7B-1025 model.
 """
 
 import os
-import subprocess
 import signal
+import subprocess
 import time
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -20,6 +21,7 @@ DEEPINFRA_ENDPOINT = "https://api.deepinfra.com/v1/openai"
 MODEL_NAME = "allenai/olmOCR-2-7B-1025"
 WORKSPACE_DIR = "./workspace"
 TEST_PDF = "./test.pdf"
+
 
 def main():
     # Validate configuration
@@ -43,13 +45,19 @@ def main():
 
     # Build the command
     cmd = [
-        "python", "-m", "olmocr.pipeline",
+        "python",
+        "-m",
+        "olmocr.pipeline",
         WORKSPACE_DIR,
-        "--server", DEEPINFRA_ENDPOINT,
-        "--api_key", DEEPINFRA_API_KEY,
-        "--model", MODEL_NAME,
+        "--server",
+        DEEPINFRA_ENDPOINT,
+        "--api_key",
+        DEEPINFRA_API_KEY,
+        "--model",
+        MODEL_NAME,
         "--markdown",
-        "--pdfs", TEST_PDF,
+        "--pdfs",
+        TEST_PDF,
     ]
 
     print("Running OCR conversion...")
@@ -58,27 +66,33 @@ def main():
     # Run the command with monitoring
     try:
         process = subprocess.Popen(
-            cmd,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            bufsize=1
+            cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1
         )
 
         # Monitor stderr for completion signals
         queue_empty_count = 0
         markdown_written = False
 
-        for line in iter(process.stderr.readline, ''):
+        for line in iter(process.stderr.readline, ""):
             # Show important log lines
-            if any(keyword in line for keyword in ['INFO', 'ERROR', 'WARNING', 'Queue remaining', 'Writing', 'markdown']):
+            if any(
+                keyword in line
+                for keyword in [
+                    "INFO",
+                    "ERROR",
+                    "WARNING",
+                    "Queue remaining",
+                    "Writing",
+                    "markdown",
+                ]
+            ):
                 print(line.rstrip())
 
             # Track completion signals
-            if 'Writing' in line and 'markdown' in line:
+            if "Writing" in line and "markdown" in line:
                 markdown_written = True
 
-            if 'Queue remaining: 0' in line and markdown_written:
+            if "Queue remaining: 0" in line and markdown_written:
                 queue_empty_count += 1
                 # After seeing queue empty 3 times, we're definitely done
                 if queue_empty_count >= 3:
@@ -104,7 +118,7 @@ def main():
         if workspace_path.exists():
             markdown_files = list(workspace_path.glob("**/*.md"))
             if markdown_files:
-                print(f"\nGenerated markdown files:")
+                print("\nGenerated markdown files:")
                 for md_file in markdown_files:
                     print(f"  - {md_file}")
                     print(f"\nPreview of {md_file.name}:")
@@ -134,9 +148,10 @@ def main():
         return 130
     except Exception as e:
         print(f"\nError: {e}")
-        if 'process' in locals() and process.poll() is None:
+        if "process" in locals() and process.poll() is None:
             process.terminate()
         return 1
+
 
 if __name__ == "__main__":
     exit(main())

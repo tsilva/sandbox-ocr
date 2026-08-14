@@ -5,7 +5,7 @@ description = "Testing OLMoCR with DeepInfra remote inference"
 requires-python = ">=3.11"
 dependencies = [
     "olmocr>=0.4.0",
-    "python-dotenv>=1.0.0",
+    "python-dotenv>=1.2.2",
 ]
 
 [tool.uv]
@@ -13,11 +13,34 @@ exclude-newer = "7 days"
 constraint-dependencies = [
   "mistralai!=2.4.6",
   "guardrails-ai!=0.10.1",
+  "bleach>=6.4.0",
+  "cryptography>=50",
+  "idna>=3.15",
+  "pillow>=12.3",
+  "pyasn1>=0.6.4",
+  "pygments>=2.20",
+  "pypdf>=6.15",
+  "requests>=2.33",
+  "setuptools>=83",
+  "soupsieve>=2.8.4",
+  "torch>=2.13",
+  "transformers>=5.5",
+  "urllib3>=2.7",
 ]
 package = false
+
+[dependency-groups]
+dev = [
+  "pytest>=9,<10",
+  "ruff>=0.15,<0.16",
+]
 
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
