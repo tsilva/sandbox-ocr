@@ -31,9 +31,11 @@ Setup Options:
 
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
-from olmocr_extractor import OLMoCRExtractor
+
 from ocr_providers import print_providers
+from olmocr_extractor import OLMoCRExtractor
 
 # Load environment variables
 load_dotenv()
@@ -47,8 +49,9 @@ def test_deepseek_vllm():
 
     # Check if vLLM server is running
     import socket
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = sock.connect_ex(('localhost', 8000))
+    result = sock.connect_ex(("localhost", 8000))
     sock.close()
 
     if result != 0:
@@ -57,9 +60,7 @@ def test_deepseek_vllm():
         return None
 
     extractor = OLMoCRExtractor(
-        provider="deepseek-vllm",
-        endpoint="http://localhost:8000/v1",
-        verbose=True
+        provider="deepseek-vllm", endpoint="http://localhost:8000/v1", verbose=True
     )
 
     # Convert test PDF
@@ -91,11 +92,7 @@ def test_deepseek_clarifai():
         print("Please set CLARIFAI_PAT environment variable")
         return None
 
-    extractor = OLMoCRExtractor(
-        provider="deepseek-clarifai",
-        api_key=api_key,
-        verbose=True
-    )
+    extractor = OLMoCRExtractor(provider="deepseek-clarifai", api_key=api_key, verbose=True)
 
     # Convert test PDF
     pdf_file = "./test1.pdf"
@@ -131,10 +128,7 @@ def test_custom_endpoint():
         return None
 
     extractor = OLMoCRExtractor(
-        api_key=custom_key,
-        endpoint=custom_endpoint,
-        model=custom_model,
-        verbose=True
+        api_key=custom_key, endpoint=custom_endpoint, model=custom_model, verbose=True
     )
 
     # Convert test PDF

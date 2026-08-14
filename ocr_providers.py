@@ -14,6 +14,7 @@ from typing import Optional
 @dataclass
 class OCRProvider:
     """Configuration for an OCR provider."""
+
     name: str
     endpoint: str
     model: str
@@ -30,34 +31,41 @@ PROVIDERS = {
         endpoint="https://api.deepinfra.com/v1/openai",
         model="allenai/olmOCR-2-7B-1025",
         api_key_env_var="DEEPINFRA_API_KEY",
-        description="OLMoCR model via DeepInfra. Handles equations, tables, complex layouts, handwriting, and multi-column documents.",
+        description=(
+            "OLMoCR model via DeepInfra. Handles equations, tables, complex layouts, "
+            "handwriting, and multi-column documents."
+        ),
         pricing_input="~$0.09 per 1M input tokens",
-        pricing_output="~$0.19 per 1M output tokens"
+        pricing_output="~$0.19 per 1M output tokens",
     ),
-
     "deepseek-vllm": OCRProvider(
         name="DeepSeek-OCR via vLLM (Self-hosted)",
         endpoint="http://localhost:8000/v1",  # Default vLLM endpoint
         model="deepseek-ai/DeepSeek-OCR",
         api_key_env_var="VLLM_API_KEY",  # Optional for self-hosted
-        description="DeepSeek-OCR self-hosted via vLLM. Fast inference (~2500 tokens/s on A100-40G). Requires local GPU setup."
+        description=(
+            "DeepSeek-OCR self-hosted via vLLM. Fast inference (~2500 tokens/s on "
+            "A100-40G). Requires local GPU setup."
+        ),
     ),
-
     "deepseek-clarifai": OCRProvider(
         name="DeepSeek-OCR via Clarifai",
-        endpoint="https://api.clarifai.com/v2/models/deepseek-ocr/outputs",  # Placeholder - check actual endpoint
+        # Placeholder - check the actual endpoint before enabling this provider.
+        endpoint="https://api.clarifai.com/v2/models/deepseek-ocr/outputs",
         model="deepseek-ai/DeepSeek-OCR",
         api_key_env_var="CLARIFAI_PAT",
-        description="DeepSeek-OCR hosted by Clarifai. OpenAI-compatible API. Can process up to 200K pages per day on single A100."
+        description=(
+            "DeepSeek-OCR hosted by Clarifai. OpenAI-compatible API. Can process up "
+            "to 200K pages per day on a single A100."
+        ),
     ),
-
     "custom": OCRProvider(
         name="Custom OpenAI-compatible endpoint",
         endpoint="",  # User must specify
-        model="",     # User must specify
+        model="",  # User must specify
         api_key_env_var="CUSTOM_API_KEY",
-        description="Custom OpenAI-compatible OCR endpoint"
-    )
+        description="Custom OpenAI-compatible OCR endpoint",
+    ),
 }
 
 
@@ -76,10 +84,7 @@ def get_provider(provider_name: str) -> OCRProvider:
     """
     if provider_name not in PROVIDERS:
         available = ", ".join(PROVIDERS.keys())
-        raise ValueError(
-            f"Unknown provider: {provider_name}. "
-            f"Available providers: {available}"
-        )
+        raise ValueError(f"Unknown provider: {provider_name}. Available providers: {available}")
     return PROVIDERS[provider_name]
 
 
