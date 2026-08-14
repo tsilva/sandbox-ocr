@@ -32,7 +32,7 @@ package = false
 [dependency-groups]
 dev = [
   "pytest>=9,<10",
-  "ruff>=0.15,<0.16",
+  "ruff>=0.16.2,<0.17",
 ]
 
 [tool.ruff]
