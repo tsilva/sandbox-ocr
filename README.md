@@ -25,13 +25,16 @@ git clone https://github.com/tsilva/sandbox-ocr.git
 cd sandbox-ocr
 uv sync
 
-# Configure API key
-cp .env.example .env
-# Edit .env with your DEEPINFRA_API_KEY
+# Verify the API key stored in macOS Keychain
+keyenv doctor
 
 # Convert a PDF
-uv run python -c "from olmocr_extractor import convert_pdf_to_markdown; convert_pdf_to_markdown('test.pdf')"
+keyenv run -- uv run python -c "from olmocr_extractor import convert_pdf_to_markdown; convert_pdf_to_markdown('test.pdf')"
 ```
+
+Private values declared in `.keyenv.toml` are injected only into commands
+launched through `keyenv run -- ...`; Python reads them normally through
+`os.environ`. Keep only non-secret provider settings in `.env`.
 
 ## Providers
 
@@ -46,13 +49,13 @@ uv run python -c "from olmocr_extractor import convert_pdf_to_markdown; convert_
 
 ```bash
 # Single PDF conversion
-uv run python -c "from olmocr_extractor import convert_pdf_to_markdown; convert_pdf_to_markdown('input.pdf')"
+keyenv run -- uv run python -c "from olmocr_extractor import convert_pdf_to_markdown; convert_pdf_to_markdown('input.pdf')"
 
 # Batch conversion
-uv run python test_colocated.py
+keyenv run -- uv run python test_colocated.py
 
 # Test DeepSeek-OCR
-uv run python test_deepseek.py
+keyenv run -- uv run python test_deepseek.py
 ```
 
 ## Requirements
