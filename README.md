@@ -1,9 +1,10 @@
-<div align="center">
+<p align="center">
   <img src="https://raw.githubusercontent.com/tsilva/sandbox-ocr/main/logo.png" alt="sandbox-ocr" width="512"/>
-
-  **📄 PDF-to-Markdown OCR conversion with multiple providers 👁️**
-
-</div>
+  <br />
+  <!-- repo-tagline:start -->
+  <strong>📄 PDF-to-Markdown OCR conversion with multiple providers 👁️</strong>
+  <!-- repo-tagline:end -->
+</p>
 
 ## Overview
 
