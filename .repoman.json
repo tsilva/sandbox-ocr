@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "exceptions": {
+    "dependencies.sources": {
+      "pyproject.toml#tool.uv.exclude-newer-package.pypdf": "User approved on 2026-10-28 a one-time release-age exception for exactly pypdf 6.21.2 to fix PDF parsing advisories. The exact constraint and artifact cutoff admit no later version; all other packages retain the seven-day gate."
+    }
+  }
+}
