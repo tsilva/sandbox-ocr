@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: "3.13"
           enable-cache: true
-      - run: uv sync --frozen --group dev --no-config
-      - run: uv audit --frozen --no-config
+      - run: uv sync --frozen --group dev
+      - run: uv audit --frozen
       - run: uv run --no-sync ruff check .
       - run: uv run --no-sync pytest -q tests
       - run: uv run --no-sync python -c "import olmocr.pipeline, olmocr_extractor, ocr_providers"
