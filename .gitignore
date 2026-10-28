@@ -132,3 +132,6 @@ var/
 venv.bak/
 wheels/
 workspace/
+
+# Operator-local access bindings
+/.access.local.toml

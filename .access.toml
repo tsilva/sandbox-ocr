@@ -1,0 +1,17 @@
+version = 1
+
+[profiles.deepinfra]
+description = "Convert documents with OLMoCR through DeepInfra."
+variables = ["DEEPINFRA_API_KEY"]
+
+[profiles.clarifai]
+description = "Convert documents with DeepSeek-OCR through Clarifai."
+variables = ["CLARIFAI_PAT"]
+
+[profiles.vllm]
+description = "Authenticate to an operator-selected secured vLLM endpoint. Unauthenticated local endpoints need no credential profile."
+variables = ["VLLM_API_KEY"]
+
+[profiles.custom]
+description = "Authenticate to an operator-selected custom OCR endpoint."
+variables = ["CUSTOM_API_KEY"]

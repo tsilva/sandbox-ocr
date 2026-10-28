@@ -1,6 +1,9 @@
 # Quick Start Guide
 
-Get started with PDF to Markdown conversion in 5 minutes.
+Get started with PDF to Markdown conversion.
+
+Run credential-dependent examples inside the native injection command in
+[Service access](README.md#service-access), after verifying the selected binding.
 
 ## Option 1: Default Setup (OLMoCR via DeepInfra)
 
@@ -11,8 +14,8 @@ uv sync
 
 **2. Configure API key:**
 ```bash
-cp .env.example .env
-# Edit .env and add your DEEPINFRA_API_KEY
+# Configure the deepinfra profile using README.md, Service access.
+# Copy .env.example only for optional non-secret endpoint/model settings.
 ```
 
 **3. Convert a PDF:**
@@ -98,10 +101,8 @@ result = extractor.convert_pdf("your_document.pdf")
 - Generate a Personal Access Token (PAT)
 
 **2. Configure:**
-```bash
-# Add to .env
-CLARIFAI_PAT=your-pat-token
-```
+Select the `clarifai` profile and verify its narrow binding as described in
+[Service access](README.md#service-access).
 
 **3. Use Clarifai:**
 ```python
@@ -134,7 +135,7 @@ uv run python test_deepseek.py
 ## Common Issues
 
 **"API key not found"**
-- Check `.env` file exists in project root
+- Check the selected access binding and nonempty injected key presence; do not print keys
 - Verify the correct environment variable is set for your provider
 
 **"Connection refused"** (vLLM)
@@ -176,11 +177,8 @@ extractor.convert_pdfs_colocated(["file1.pdf", "file2.pdf"])
 ```
 
 ### Environment Variables
-```bash
-DEEPINFRA_API_KEY=xxx    # OLMoCR via DeepInfra
-CLARIFAI_PAT=xxx         # DeepSeek via Clarifai
-VLLM_API_KEY=xxx         # Self-hosted vLLM (optional)
-CUSTOM_API_KEY=xxx       # Custom endpoint
-```
+The four variable names and separate provider profiles are declared in
+[.access.toml](.access.toml). Inject only the selected provider key; never put
+keys in `.env` or shell exports.
 
 Happy converting! 🚀

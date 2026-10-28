@@ -14,7 +14,7 @@ All providers use OpenAI-compatible API format and handle equations, tables, com
 
 ## Environment Setup
 
-This project uses `uv` for dependency management. Private environment variables are declared in `.keyenv.toml`, stored in macOS Keychain, and injected with `keyenv run -- ...`; non-secret provider settings may remain in `.env` (see `.env.example`):
+This project uses `uv` for dependency management. Credential profiles are declared in `.access.toml`; operator bindings belong in ignored, owner-only `.access.local.toml`. Before selecting credentials, follow the repository access convention in `/Users/tsilva/.codex/access.md` and the Service access section of README.md. Use native Infisical injection for only the selected provider and command. No binding is verified by this inventory; report an unbound profile rather than guessing or using the project root. Keep only non-secret provider settings in `.env` (see `.env.example`):
 - `DEEPINFRA_API_KEY`: DeepInfra API key (for OLMoCR)
 - `CLARIFAI_PAT`: Clarifai Personal Access Token (for DeepSeek-OCR via Clarifai)
 - `VLLM_API_KEY`: Optional key for secured vLLM server (for self-hosted DeepSeek-OCR)
@@ -107,7 +107,7 @@ All OCR output goes to `workspace/` directory:
 - **Endpoint**: https://api.deepinfra.com/v1/openai
 - **Model**: allenai/olmOCR-2-7B-1025
 - **Pricing**: ~$0.09 per 1M input tokens, ~$0.19 per 1M output tokens
-- **Setup**: Store `DEEPINFRA_API_KEY` with `keyenv set DEEPINFRA_API_KEY`
+- **Setup**: Select the `deepinfra` access profile and verify its narrow operator binding before use
 
 ### DeepSeek-OCR via vLLM (Self-hosted)
 - **Endpoint**: http://localhost:8000/v1 (configurable)
@@ -118,6 +118,6 @@ All OCR output goes to `workspace/` directory:
 ### DeepSeek-OCR via Clarifai
 - **Endpoint**: Clarifai's OpenAI-compatible endpoint
 - **Model**: deepseek-ai/DeepSeek-OCR
-- **Setup**: Declare and store `CLARIFAI_PAT` in Keychain before using this provider
+- **Setup**: Select the `clarifai` access profile and verify its narrow operator binding before use
 
 For detailed DeepSeek-OCR setup instructions, see **DEEPSEEK_SETUP.md**.

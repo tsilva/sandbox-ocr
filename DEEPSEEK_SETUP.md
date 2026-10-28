@@ -39,11 +39,9 @@ The server will download the model weights (first run only) and start serving on
 
 ### Configuration
 
-Add to your `.env` file:
-```bash
-# Optional: Add API key if your vLLM server requires authentication
-VLLM_API_KEY=your-optional-key
-```
+For a secured endpoint, select the `vllm` profile and verify its narrow binding
+using [Service access](README.md#service-access). An unauthenticated local
+endpoint requires no credential injection.
 
 ### Usage
 
@@ -78,10 +76,9 @@ if result["success"]:
 
 1. Sign up at [clarifai.com](https://www.clarifai.com)
 2. Generate a Personal Access Token (PAT)
-3. Add to your `.env` file:
-```bash
-CLARIFAI_PAT=your-clarifai-pat-token
-```
+3. Select the `clarifai` profile and verify its narrow binding using
+   [Service access](README.md#service-access). Run credential-dependent examples
+   inside that profile's native injection command.
 
 ### Usage
 
@@ -115,9 +112,10 @@ Use any OpenAI-compatible OCR service.
 
 ### Configuration
 
-Add to your `.env` file:
+Select the `custom` profile for `CUSTOM_API_KEY` using
+[Service access](README.md#service-access). Keep only these non-secret settings
+in `.env`:
 ```bash
-CUSTOM_API_KEY=your-api-key
 CUSTOM_OCR_ENDPOINT=https://your-endpoint.com/v1
 CUSTOM_OCR_MODEL=your-model-name
 ```
@@ -212,7 +210,7 @@ uv run python test_deepseek.py
 - Consider using Clarifai hosted option instead
 
 ### API Key Errors
-- Verify `.env` file is in the correct directory
+- Verify the selected access profile has a valid binding and the injected key is nonempty; do not print values
 - Check environment variable names match provider requirements
 - Ensure API key has proper permissions
 
@@ -261,7 +259,7 @@ result = extractor.convert_pdf(
 ## Next Steps
 
 1. Choose your deployment option (vLLM, Clarifai, or custom)
-2. Set up environment variables in `.env`
+2. Verify the selected provider's access binding; use `.env` only for non-secret settings
 3. Run `test_deepseek.py` to verify setup
 4. Start converting PDFs to markdown!
 

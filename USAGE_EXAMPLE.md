@@ -103,9 +103,8 @@ if result["success"]:
 import os
 from olmocr_extractor import OLMoCRExtractor
 
-# Load from .env file
-from dotenv import load_dotenv
-load_dotenv()
+# Run this example inside the selected native injection command.
+# See README.md, Service access; keys are never stored in .env.
 
 # No need to pass api_key - will read from DEEPINFRA_API_KEY env var
 extractor = OLMoCRExtractor(workspace_dir="./output")
@@ -151,8 +150,7 @@ result = extractor.convert_pdf("document.pdf")
 You can also run it directly from the command line:
 
 ```bash
-# Make sure DEEPINFRA_API_KEY is set in environment or .env file
-export DEEPINFRA_API_KEY="your_api_key"
+# Run under the verified deepinfra native injection prefix from README.md.
 
 # Run the extractor
 python olmocr_extractor.py document.pdf
@@ -255,7 +253,7 @@ batch_convert_directory("./pdfs", "./markdown_output")
 
 ## Tips
 
-1. **API Key Security**: Never hardcode API keys. Use environment variables or .env files.
+1. **API Key Security**: Never hardcode API keys. Use the selected profile's native injection; reserve `.env` for non-secret settings.
 
 2. **Large Documents**: Use the `timeout` parameter for large PDFs to prevent hanging.
 
