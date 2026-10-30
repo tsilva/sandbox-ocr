@@ -100,3 +100,5 @@ infisical run --projectId=PROJECT_UUID --env=ENVIRONMENT --path=/NARROW_FOLDER \
 For conversion, retain the same native injection prefix and replace only the
 child command after `--` with a conversion example above. Select the matching
 profile and variable for another provider; never inject all provider keys at once.
+
+[MIT License](LICENSE).
