@@ -15,5 +15,5 @@ requests>=2.33
 setuptools>=83
 soupsieve>=2.10
 torch>=2.13
-transformers>=5.17.0
+transformers>=5.22.1
 urllib3>=2.8.0
