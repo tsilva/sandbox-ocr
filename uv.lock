@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -26,8 +26,8 @@ constraints = [
     { name = "requests", specifier = ">=2.33" },
     { name = "setuptools", specifier = ">=83" },
     { name = "soupsieve", specifier = ">=2.10" },
-    { name = "torch", specifier = ">=2.13" },
-    { name = "transformers", specifier = ">=5.17.0" },
+    { name = "torch", specifier = ">=2.15.0" },
+    { name = "transformers", specifier = ">=5.22.1" },
     { name = "urllib3", specifier = ">=2.8.0" },
 ]
 overrides = [{ name = "filelock", specifier = "==4.2.4" }]
