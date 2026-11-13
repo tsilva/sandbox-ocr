@@ -177,8 +177,8 @@ extractor.convert_pdfs_colocated(["file1.pdf", "file2.pdf"])
 ```
 
 ### Environment Variables
-The four variable names and separate provider profiles are declared in
-[.access.toml](.access.toml). Inject only the selected provider key; never put
-keys in `.env` or shell exports.
+Configure only the selected provider in its execution environment. Keep private
+values out of committed files. Agent-operated use requires a separately reviewed
+proxy route; the local inventory alone grants no provider access.
 
 Happy converting! 🚀

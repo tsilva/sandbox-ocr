@@ -14,7 +14,9 @@ All providers use OpenAI-compatible API format and handle equations, tables, com
 
 ## Environment Setup
 
-This project uses `uv` for dependency management. Credential profiles are declared in `.access.toml`; operator bindings belong in ignored, owner-only `.access.local.toml`. Before selecting credentials, follow the repository access convention in `/Users/tsilva/.codex/access.md` and the Service access section of README.md. Use native Infisical injection for only the selected provider and command. No binding is verified by this inventory; report an unbound profile rather than guessing or using the project root. Keep only non-secret provider settings in `.env` (see `.env.example`):
+This project uses `uv` for dependency management. Agent-operated credential use requires an explicitly configured, compatible
+proxy route; this repository has no approved provider binding. Do not infer
+access from an inventory or fall back to raw injection. Keep only non-secret provider settings in `.env` (see `.env.example`):
 - `DEEPINFRA_API_KEY`: DeepInfra API key (for OLMoCR)
 - `CLARIFAI_PAT`: Clarifai Personal Access Token (for DeepSeek-OCR via Clarifai)
 - `VLLM_API_KEY`: Optional key for secured vLLM server (for self-hosted DeepSeek-OCR)
