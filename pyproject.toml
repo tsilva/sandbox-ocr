@@ -2,7 +2,7 @@
 name = "olmocr-test"
 version = "0.1.0"
 description = "Testing OLMoCR with DeepInfra remote inference"
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 dependencies = [
     "olmocr>=0.4.0",
     "python-dotenv>=1.2.2",
@@ -26,7 +26,7 @@ constraint-dependencies = [
   "pypdf>=6.21.4",
   "requests>=2.33",
   "setuptools>=83",
-  "soupsieve>=2.10",
+  "soupsieve>=4.0",
   "torch>=2.15.0",
   "transformers>=5.22.1",
   "urllib3>=2.8.0",

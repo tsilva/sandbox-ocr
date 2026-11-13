@@ -60,7 +60,7 @@ uv run python test_deepseek.py
 
 ## Requirements
 
-- Python 3.x
+- Python 3.11.5+ (required by the patched HTML selector dependency)
 - uv
 - API key (DeepInfra, Clarifai, or custom)
 
